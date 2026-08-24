@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build outputs (lib and dist are shipped via package.json "files", but
+# keep them out of git so published artifacts are built on release)
+# Uncomment if you prefer to commit builds:
+# lib/
+# dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local env
+.env
+.env.local

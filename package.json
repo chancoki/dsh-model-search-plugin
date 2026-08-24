@@ -1,0 +1,54 @@
+{
+  "name": "dsh-model-search-plugin",
+  "version": "1.0.0",
+  "description": "DSH client plugin — keyword search when selecting models in the Web GUI",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "scripts": {
+    "clean": "if exist dist rmdir /s /q dist && if exist lib rmdir /s /q lib",
+    "build": "npm run clean && npm run build:tsc && npm run build:bundle",
+    "build:tsc": "tsc",
+    "build:bundle": "node scripts/build-plugin.js",
+    "dev": "node scripts/build-plugin.js --watch",
+    "test": "echo \"Test: open test.html in browser\" && exit 0",
+    "serve": "npx serve example"
+  },
+  "keywords": ["dsh", "plugin", "model", "search", "filter", "deepseek", "harness"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "README.md",
+    "install.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/dsh-model-search-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/dsh-model-search-plugin/issues"
+  }
+}

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSH模型搜索插件 - 实时测试</title>
+    <script type="module" src="./dist/index.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        h1 {
+            color: #1890ff;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #e8e8e8;
+        }
+        
+        h2 {
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        h2::before {
+            content: "▶";
+            font-size: 14px;
+            color: #1890ff;
+        }
+        
+        .model-selector-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .model-selector {
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            transition: border-color 0.3s;
+            margin-top: 8px;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+        }
+        
+        select option {
+            padding: 8px;
+            margin: 2px 0;
+        }
+        
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-running {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .status-stopped {
+            background-color: #fff2e8;
+            color: #fa8c16;
+            border: 1px solid #ffd591;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background-color: #1890ff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #096dd9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background-color: #fafafa;
+            color: #666;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #f0f0f0;
+            border-color: #bfbfbf;
+        }
+        
+        .btn-danger {
+            background-color: #ff4d4f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d9363e;
+        }
+        
+        .tips {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .tips h3 {
+            color: #0050b3;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .tips ul {
+            margin-left: 20px;
+            color: #595959;
+        }
+        
+        .tips li {
+            margin-bottom: 5px;
+        }
+        
+        .test-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .test-query {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .test-query span {
+            font-weight: 500;
+            color: #595959;
+        }
+        
+        .test-btn {
+            padding: 4px 12px;
+            background-color: #f0f0f0;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .test-btn:hover {
+            background-color: #e6e6e6;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #8c8c8c;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        .model-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 5px;
+        }
+        
+        .current-model {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 4px;
+        }
+        
+        .current-model span {
+            font-weight: 500;
+            color: #52c41a;
+        }
+        
+        .plugin-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            border-left: 4px solid #1890ff;
+        }
+        
+        .plugin-info h4 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .plugin-info .feature-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .feature {
+            font-size: 12px;
+            background-color: #e6f7ff;
+            color: #0066cc;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 DSH模型搜索插件</h1>
+            <p class="subtitle">为DeepSeek Harness添加智能模型搜索功能</p>
+        </header>
+        
+        <div class="demo-section">
+            <h2>插件状态控制</h2>
+            <div class="status-info">
+                <div class="status-badge status-stopped" id="status-badge">未初始化</div>
+                <span id="status-text">插件尚未启动</span>
+            </div>
+            
+            <div class="plugin-info">
+                <h4>插件信息</h4>
+                <p>版本：v1.0.0 | 作者：DSH Plugin Team</p>
+                <div class="feature-list">
+                    <span class="feature">🔍 实时搜索</span>
+                    <span class="feature">⌨️ 快捷键支持</span>
+                    <span class="feature">🎨 高亮显示</span>
+                    <span class="feature">🚫 自动过滤</span>
+                    <span class="feature">🎯 智能匹配</span>
+                    <span class="feature">🌙 暗色模式</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="initializePlugin()" id="init-btn">
+                    <span>🚀</span> 初始化插件
+                </button>
+                <button class="btn btn-secondary" onclick="destroyPlugin()" id="destroy-btn" disabled>
+                    <span>🗑️</span> 销毁插件
+                </button>
+                <button class="btn btn-secondary" onclick="testSearch()" id="test-btn" disabled>
+                    <span>🧪</span> 测试搜索
+                </button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>模型选择演示</h2>
+            <p>这里模拟了DSH中的模型选择器。插件会自动在上方添加搜索框。</p>
+            
+            <div class="model-selector-panel">
+                <!-- 搜索框将由插件自动插入到这里 -->
+                <div id="search-container"></div>
+                
+                <div class="model-selector">
+                    <label><strong>选择AI模型：</strong></label>
+                    <select id="model-select" size="8">
+                        <option value="gpt-4">🤖 GPT-4 (OpenAI) - 最先进的语言模型，支持复杂推理</option>
+                        <option value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo (OpenAI) - 快速且经济高效的模型</option>
+                        <option value="claude-3-opus">🎨 Claude 3 Opus (Anthropic) - 创意与安全并重</option>
+                        <option value="claude-3-sonnet">⚖️ Claude 3 Sonnet (Anthropic) - 性能与智能的平衡</option>
+                        <option value="gemini-pro">🔮 Gemini Pro (Google) - 多模态AI助手</option>
+                        <option value="gemini-ultra">🌟 Gemini Ultra (Google) - 最强大的Google AI</option>
+                        <option value="llama-3-70b">🦙 Llama 3 70B (Meta) - 开源大型语言模型</option>
+                        <option value="llama-3-8b">🐑 Llama 3 8B (Meta) - 轻量级开源模型</option>
+                        <option value="mistral-large">🇫🇷 Mistral Large (Mistral AI) - 欧洲顶级AI模型</option>
+                        <option value="codellama">💻 CodeLlama (Meta) - 编程专用LLM</option>
+                        <option value="deepseek-chat">🇨🇳 DeepSeek Chat (深度求索) - 中国领先AI助手</option>
+                        <option value="qwen-plus">🏮 Qwen Plus (通义千问) - 阿里巴巴AI助手</option>
+                    </select>
+                    
+                    <div class="current-model" id="current-model-display">
+                        当前选择：<span>未选择</span>
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <h3>💡 使用提示</h3>
+                    <ul>
+                        <li>点击"初始化插件"按钮启用搜索功能</li>
+                        <li>在搜索框中输入关键字（如：gpt、开源、编程）</li>
+                        <li>按 <strong>Ctrl+F</strong> 快捷键快速聚焦搜索框</li>
+                        <li>按 <strong>ESC</strong> 键清除搜索内容</li>
+                        <li>搜索结果会自动高亮显示</li>
+                        <li>不匹配的选项会自动隐藏</li>
+                    </ul>
+                </div>
+                
+                <div class="test-section">
+                    <h3>快速测试搜索：</h3>
+                    <div class="test-query">
+                        <span>搜索以下关键字：</span>
+                        <button class="test-btn" onclick="searchDemo('gpt')">GPT</button>
+                        <button class="test-btn" onclick="searchDemo('claude')">Claude</button>
+                        <button class="test-btn" onclick="searchDemo('开源')">开源</button>
+                        <button class="test-btn" onclick="searchDemo('编程')">编程</button>
+                        <button class="test-btn" onclick="searchDemo('google')">Google</button>
+                        <button class="test-btn" onclick="clearSearch()">清除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>配置选项</h2>
+            <p>插件提供多个配置选项，可以根据需求自定义：</p>
+            
+            <div style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="showConfigOptions()">查看配置选项</button>
+                <div id="config-options" style="display: none; margin-top: 15px;">
+                    <pre style="background-color: #f6f8fa; padding: 15px; border-radius: 6px; overflow: auto;">
+const plugin = new ModelSearchPlugin({
+    placeholder: '搜索模型...',
+    hotkeyEnabled: true,
+    searchHotkey: 'Ctrl+F',
+    debounceDelay: 300,
+    hideUnmatched: true,
+    searchFields: ['name', 'provider', 'description']
+});</pre>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2024 DSH Model Search Plugin | 
+               <a href="#" onclick="openExample()" style="color: #1890ff; text-decoration: none;">查看完整示例</a> | 
+               <a href="#" onclick="viewSourceCode()" style="color: #1890ff; text-decoration: none;">查看源代码</a>
+            </p>
+            <p style="margin-top: 5px; font-size: 11px;">安装路径：D:\code\dsh-model-search\dist\index.js</p>
+        </footer>
+    </div>
+
+    <script>
+        let pluginInstance = null;
+        let isInitialized = false;
+        
+        function updateStatus() {
+            const statusBadge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+            const initBtn = document.getElementById('init-btn');
+            const destroyBtn = document.getElementById('destroy-btn');
+            const testBtn = document.getElementById('test-btn');
+            
+            if (isInitialized && pluginInstance) {
+                statusBadge.textContent = '运行中';
+                statusBadge.className = 'status-badge status-running';
+                statusText.textContent = '插件正在运行，搜索功能已启用';
+                initBtn.disabled = true;
+                destroyBtn.disabled = false;
+                testBtn.disabled = false;
+            } else {
+                statusBadge.textContent = '未初始化';
+                statusBadge.className = 'status-badge status-stopped';
+                statusText.textContent = '插件尚未启动';
+                initBtn.disabled = false;
+                destroyBtn.disabled = true;
+                testBtn.disabled = true;
+            }
+        }
+        
+        async function initializePlugin() {
+            if (isInitialized) {
+                alert('插件已经初始化！');
+                return;
+            }
+            
+            try {
+                // 动态导入插件
+                const { ModelSearchPlugin } = await import('./dist/index.js');
+                
+                pluginInstance = new ModelSearchPlugin({
+                    placeholder: '搜索模型名称、提供商或描述...',
+                    hotkeyEnabled: true,
+                    searchHotkey: 'Ctrl+F',
+                    debounceDelay: 200,
+                    hideUnmatched: true
+                });
+                
+                // 先清除已有的搜索容器
+                const container = document.getElementById('search-container');
+                container.innerHTML = '';
+                
+                // 设置搜索容器的ID，让插件能找到它
+                container.id = 'model-search-target';
+                container.setAttribute('data-testid', 'model-selector');
+                
+                // 初始化插件
+                pluginInstance.initialize();
+                
+                // 手动触发一下搜索框注入（因为插件可能没找到我们的选择器）
+                setTimeout(() => {
+                    const searchInput = document.querySelector('.dsh-model-search-input');
+                    if (!searchInput) {
+                        // 如果没有搜索框，手动创建一个
+                        createManualSearch();
+                    }
+                }, 100);
+                
+                isInitialized = true;
+                updateStatus();
+                
+                // 更新选择显示
+                const modelSelect = document.getElementById('model-select');
+                modelSelect.addEventListener('change', updateSelectedModel);
+                updateSelectedModel();
+                
+                showNotification('插件初始化成功！');
+                
+            } catch (error) {
+                console.error('插件初始化失败:', error);
+                alert('插件初始化失败：' + error.message);
+            }
+        }
+        
+        function createManualSearch() {
+            const container = document.getElementById('search-container');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="dsh-model-search-container" style="margin-bottom: 15px;">
+                    <div class="dsh-model-search-wrapper" style="position: relative;">
+                        <input type="text" class="dsh-model-search-input" 
+                               placeholder="搜索模型名称、提供商或描述..."
+                               style="width: 100%; padding: 10px 40px 10px 15px; border: 2px solid #e8e8e8; border-radius: 6px; font-size: 14px;">
+                        <button class="dsh-model-search-clear" 
+                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; display: none;">✕</button>
+                    </div>
+                </div>
+            `;
+            
+            // 绑定简单搜索功能
+            setupManualSearch();
+        }
+        
+        function setupManualSearch() {
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            const clearButton = document.querySelector('.dsh-model-search-clear');
+            const modelSelect = document.getElementById('model-select');
+            
+            if (!searchInput || !clearButton || !modelSelect) return;
+            
+            let debounceTimer;
+            
+            searchInput.addEventListener('input', function(e) {
+                clearTimeout(debounceTimer);
+                const value = e.target.value;
+                clearButton.style.display = value ? 'block' : 'none';
+                
+                debounceTimer = setTimeout(() => {
+                    performManualSearch(value);
+                }, 200);
+            });
+            
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                clearButton.style.display = 'none';
+                clearManualSearch();
+                searchInput.focus();
+            });
+            
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (searchInput.value) {
+                        searchInput.value = '';
+                        clearButton.style.display = 'none';
+                        clearManualSearch();
+                    }
+                    e.preventDefault();
+                }
+                
+                if (e.key === 'Enter') {
+                    performManualSearch(searchInput.value);
+                    e.preventDefault();
+                }
+            });
+            
+            // 添加快捷键监听
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            });
+        }
+        
+        function performManualSearch(query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            const modelSelect = document.getElementById('model-select');
+            const options = modelSelect.options;
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            
+            if (!normalizedQuery) {
+                clearManualSearch();
+                return;
+            }
+            
+            let foundMatches = 0;
+            
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                const text = option.text.toLowerCase();
+                
+                if (text.includes(normalizedQuery)) {
+                    foundMatches++;
+                    option.style.display = '';
+                    option.style.backgroundColor = '#e6f7ff';
+                    option.style.color = '#1890ff';
+                    option.style.fontWeight = 'bold';
+                    
+                    // 滚动到第一个匹配项
+                    if (foundMatches === 1) {
+                        option.selected = true;
+                        updateSelectedModel();
+                        option.scrollIntoView({ block: 'nearest' });
+                    }
+                } else {
+                    option.style.display = 'none';
+                    option.style.backgroundColor = '';
+                    option.style.color = '';
+                    option.style.fontWeight = '';
+                }
+            }
+            
+            // 视觉反馈
+            if (foundMatches === 0 && normalizedQuery) {
+                searchInput.classList.add('no-results');
+                searchInput.style.borderColor = '#ff4d4f';
+                setTimeout(() => {
+                    searchInput.classList.remove('no-results');
+                    searchInput.style.borderColor = '#e8e8e8';
+                }, 1000);
+            } else {
+                searchInput.style.borderColor = '#1890ff';
+            }
+        }
+        
+        function clearManualSearch() {
+            const modelSelect = document.getElementById('model-select');
+            const options = modelSelect.options;
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                option.style.display = '';
+                option.style.backgroundColor = '';
+                option.style.color = '';
+                option.style.fontWeight = '';
+            }
+            
+            if (searchInput) {
+                searchInput.style.borderColor = '#e8e8e8';
+                searchInput.classList.remove('no-results');
+            }
+        }
+        
+        function updateSelectedModel() {
+            const modelSelect = document.getElementById('model-select');
+            const display = document.getElementById('current-model-display');
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            
+            if (selectedOption) {
+                display.innerHTML = `当前选择：<span>${selectedOption.text}</span>`;
+            } else {
+                display.innerHTML = '当前选择：<span>未选择</span>';
+            }
+        }
+        
+        function destroyPlugin() {
+            if (!isInitialized || !pluginInstance) {
+                alert('插件未初始化！');
+                return;
+            }
+            
+            try {
+                if (pluginInstance.destroy) {
+                    pluginInstance.destroy();
+                }
+                
+                // 清除手动创建的搜索
+                const container = document.getElementById('search-container');
+                container.innerHTML = '';
+                
+                pluginInstance = null;
+                isInitialized = false;
+                updateStatus();
+                
+                showNotification('插件已销毁');
+                
+            } catch (error) {
+                console.error('插件销毁失败:', error);
+                alert('插件销毁失败：' + error.message);
+            }
+        }
+        
+        function testSearch() {
+            if (!isInitialized) {
+                alert('请先初始化插件！');
+                return;
+            }
+            
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            if (searchInput) {
+                searchInput.value = 'gpt';
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+                
+                showNotification('搜索测试："gpt"');
+            }
+        }
+        
+        function searchDemo(query) {
+            if (!isInitialized) {
+                alert('请先初始化插件！');
+                return;
+            }
+            
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            if (searchInput) {
+                searchInput.value = query;
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+                
+                showNotification(`搜索："${query}"`);
+            }
+        }
+        
+        function clearSearch() {
+            const searchInput = document.querySelector('.dsh-model-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+                
+                showNotification('搜索已清除');
+            }
+        }
+        
+        function showConfigOptions() {
+            const configDiv = document.getElementById('config-options');
+            if (configDiv.style.display === 'none') {
+                configDiv.style.display = 'block';
+            } else {
+                configDiv.style.display = 'none';
+            }
+        }
+        
+        function showNotification(message) {
+            // 创建一个通知元素
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #1890ff;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+        
+        function openExample() {
+            window.open('example/index.html', '_blank');
+        }
+        
+        function viewSourceCode() {
+            alert('源代码位于：D:\\code\\dsh-model-search\\src\\');
+        }
+        
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+            
+            .dsh-model-search-input:focus {
+                border-color: #1890ff !important;
+                box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1) !important;
+                outline: none;
+            }
+            
+            .dsh-model-search-clear {
+                background: none !important;
+                border: none !important;
+                cursor: pointer !important;
+                font-size: 18px !important;
+                color: #999 !important;
+            }
+            
+            .dsh-model-search-clear:hover {
+                color: #333 !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 初始化状态
+        updateStatus();
+        
+        // 添加选择器监听
+        document.getElementById('model-select').addEventListener('change', updateSelectedModel);
+        
+        console.log('DSH模型搜索插件测试页面已加载');
+    </script>
+</body>
+</html>
