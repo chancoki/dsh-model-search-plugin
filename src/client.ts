@@ -524,3 +524,13 @@ export function apply(ctx: unknown, opts?: ModelSearchPluginOptions): void {
   configure(opts);
   activate();
 }
+
+/**
+ * Explicit export list — this is what `build-plugin.js` converts into
+ * `exports.xxx = xxx` assignments when wrapping the compiled ESM for the
+ * `window.__ModuleLoader__.load({ factory })` format. Without a grouped
+ * `export { ... }` statement, the built `lib/client.js` would export nothing
+ * and the browser-side Cordis Loader would reject it with
+ * `invalid plugin, expect function or object with an "apply" method`.
+ */
+export { configure, activate, deactivate, apply }

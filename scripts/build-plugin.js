@@ -133,6 +133,20 @@ ${TYPES_CODE.split('\n').map(l => '    ' + l).join('\n')}
     // ── compiled client code ────────────────────────────────────────
 ${factoryCode.split('\n').map(l => '    ' + l).join('\n')}
 
+    // ── export fallback (guard against stripped `export { ... }` lists) ──
+    if (typeof exports.apply !== 'function' && typeof apply === 'function') {
+      exports.apply = apply;
+    }
+    if (typeof exports.configure !== 'function' && typeof configure === 'function') {
+      exports.configure = configure;
+    }
+    if (typeof exports.activate !== 'function' && typeof activate === 'function') {
+      exports.activate = activate;
+    }
+    if (typeof exports.deactivate !== 'function' && typeof deactivate === 'function') {
+      exports.deactivate = deactivate;
+    }
+
     return module.exports;
   }
 });
