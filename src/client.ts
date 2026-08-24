@@ -488,7 +488,7 @@ function stopDocumentObserver() {
 /**
  * Configure the plugin before activation.
  */
-export function configure(opts?: ModelSearchPluginOptions): void {
+function configure(opts?: ModelSearchPluginOptions): void {
   if (opts) {
     config = { ...DEFAULTS, ...opts };
   }
@@ -497,7 +497,7 @@ export function configure(opts?: ModelSearchPluginOptions): void {
 /**
  * Activate the plugin: inject CSS, start the document observer.
  */
-export function activate(): void {
+function activate(): void {
   if (state.isActive) return;
 
   injectStyles();
@@ -507,7 +507,7 @@ export function activate(): void {
 /**
  * Deactivate the plugin: clean up all observers & injected DOM.
  */
-export function deactivate(): void {
+function deactivate(): void {
   detachFromMenu();
   stopDocumentObserver();
   removeStyles();
@@ -520,7 +520,7 @@ export function deactivate(): void {
  * @param ctx  Cordis context (unused by this DOM-based plugin).
  * @param opts Optional configuration.
  */
-export function apply(ctx: unknown, opts?: ModelSearchPluginOptions): void {
+function apply(ctx: unknown, opts?: ModelSearchPluginOptions): void {
   configure(opts);
   activate();
 }

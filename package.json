@@ -1,6 +1,6 @@
 {
   "name": "dsh-model-search-plugin",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "DSH client plugin — keyword search when selecting models in the Web GUI",
   "type": "module",
   "main": "lib/index.js",
