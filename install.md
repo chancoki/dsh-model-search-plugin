@@ -78,29 +78,27 @@ fetch('/dist/dsh-model-search-plugin.js')
 })();
 ```
 
-### 方式四：作为 DSH 客户端插件（进阶）
+### 方式四：通过 npm 安装（推荐）
 
-要作为正式的 DSH 客户端插件集成，需要：
+插件已发布到 npm：**https://www.npmjs.com/package/dsh-model-search-plugin**
 
-1. 将插件包添加到 DSH profile 目录：
-
-```bash
-# 如果使用 dsh web 的默认 profile
-dsh plugin --profile web add ./path/to/dsh-model-search-plugin
-```
-
-2. 或者在 DSH 仓库目录的 package.json 中添加依赖：
-
-```bash
-cd F:\software\nodejs\node_cache\_npx\1e7f6d9597241db0
-pnpm add ./path/to/dsh-model-search-plugin
-```
-
-3. 插件发布到 npm 后，可以直接通过包名安装：
+1. 安装依赖（自动执行 `pnpm add`）：
 
 ```bash
 dsh plugin --profile web add dsh-model-search-plugin
 ```
+
+2. 编辑 DSH profile 的 `cordis.patch.yml`（`~/.dsh/profiles/web/cordis.patch.yml`），注册客户端插件：
+
+```yaml
+- insert:
+    - id: dsh-model-search
+      name: 'dsh-model-search-plugin'
+```
+
+3. 重启 `dsh web` 使插件生效。
+
+> 提示：即使不写 `cordis.patch.yml`，包作为依赖安装后，只要 DSH 的客户端模块系统能解析到该包，插件也可通过其他方式被加载；写入 patch 是标准做法。
 
 ## 验证安装
 

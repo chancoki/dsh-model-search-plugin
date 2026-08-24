@@ -31,26 +31,47 @@ setTimeout(function() { DSHModelSearchPlugin.activate(); }, 500);
 
 将 `dist/dsh-model-search-plugin.js` 放置到能被 DSH 服务器访问的位置，然后在 DSH 页面中通过 `dsh web` 启动参数或浏览器插件注入。
 
-### 方式三：作为 DSH 客户端插件安装（推荐）
+### 方式三：通过 npm 安装（推荐）
 
-1. 将插件包添加到 DSH profile：
+插件已发布到 npm：**https://www.npmjs.com/package/dsh-model-search-plugin**
+
+**1. 安装依赖**
 
 ```bash
-cd <your-dsh-profile-dir>
-pnpm add ./path/to/dsh-model-search-plugin
+# 在 DSH profile 目录下（通常是 ~/.dsh/profiles/web）
+dsh plugin --profile web add dsh-model-search-plugin
 ```
 
-2. 或者在 DSH 主项目的 `package.json` 中添加依赖：
+或手动在 DSH profile 的 `package.json` 中添加：
 
 ```json
 {
   "dependencies": {
-    "dsh-model-search-plugin": "file:../dsh-model-search"
+    "dsh-model-search-plugin": "^1.0.0"
   }
 }
 ```
 
-3. 确保 `dsh.client` 声明被 DSH 的客户端模块系统识别（自动扫描）。
+然后在 profile 目录运行 `pnpm install`。
+
+**2. 注册为客户端插件**
+
+编辑 DSH profile 的 `cordis.patch.yml`（`~/.dsh/profiles/web/cordis.patch.yml`），添加：
+
+```yaml
+- insert:
+    - id: dsh-model-search
+      name: 'dsh-model-search-plugin'
+```
+
+**3. 重启 DSH**
+
+```bash
+# 停止并重新启动 dsh web
+dsh web
+```
+
+重启后打开模型选择弹窗，顶部即可看到搜索输入框。
 
 ## 使用 API
 
