@@ -1,6 +1,6 @@
 {
   "name": "dsh-model-search-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "DSH client plugin — keyword search when selecting models in the Web GUI",
   "type": "module",
   "main": "lib/index.js",
@@ -24,7 +24,7 @@
     }
   },
   "scripts": {
-    "clean": "if exist dist rmdir /s /q dist && if exist lib rmdir /s /q lib",
+    "clean": "node scripts/clean.js",
     "build": "npm run clean && npm run build:tsc && npm run build:bundle",
     "build:tsc": "tsc",
     "build:bundle": "node scripts/build-plugin.js",
@@ -32,8 +32,16 @@
     "test": "echo \"Test: open test.html in browser\" && exit 0",
     "serve": "npx serve example"
   },
-  "keywords": ["dsh", "plugin", "model", "search", "filter", "deepseek", "harness"],
-  "author": "",
+  "keywords": [
+    "dsh",
+    "plugin",
+    "model",
+    "search",
+    "filter",
+    "deepseek",
+    "harness"
+  ],
+  "author": "chancoki <chhj727@163.com>",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.0.0"
@@ -46,9 +54,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/dsh-model-search-plugin"
+    "url": "git+https://github.com/chancoki/dsh-model-search-plugin.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/dsh-model-search-plugin/issues"
+    "url": "https://github.com/chancoki/dsh-model-search-plugin/issues"
   }
 }
