@@ -133,7 +133,7 @@ ${TYPES_CODE.split('\n').map(l => '    ' + l).join('\n')}
     // ── compiled client code ────────────────────────────────────────
 ${factoryCode.split('\n').map(l => '    ' + l).join('\n')}
 
-    // ── export fallback (guard against stripped `export { ... }` lists) ──
+    // ── export fallback (guard against stripped 'export { ... }' lists) ──
     if (typeof exports.apply !== 'function' && typeof apply === 'function') {
       exports.apply = apply;
     }
