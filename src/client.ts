@@ -610,10 +610,16 @@ function startDocumentObserver() {
         const pickerList =
           (node.matches?.('ul[class*="candidateList"]') ? node : null) ??
           node.querySelector<HTMLElement>('ul[class*="candidateList"]');
-        if (pickerList && !state.isActive) {
-          const dialog = pickerList.closest('div')?.parentElement ?? pickerList;
-          pickerState.dialogEl = (dialog as HTMLElement) ?? pickerList;
+        if (pickerList) {
+          pickerState.dialogEl = pickerList;
           attachPickerObserver(document.body);
+          // Inject immediately: the list may already be fully rendered when
+          // we first see it; waiting for a further mutation delayed the box
+          // until the user interacted with the dialog.
+          if (pickerList !== pickerState.listEl) {
+            pickerState.listEl = pickerList;
+            injectSearchIntoPicker(pickerList);
+          }
           return;
         }
 

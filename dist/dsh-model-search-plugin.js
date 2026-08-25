@@ -7,15 +7,12 @@
  * Usage:
  *   <script src="dsh-model-search-plugin.js"></script>
  *   <script> DSHModelSearchPlugin.activate() </script>
- *
- * Or in the browser DevTools console:
- *   DSHModelSearchPlugin.activate()
  */
 (function () {
   'use strict';
 
   // ── options ────────────────────────────────────────────────────────
-  var DEFAULTS = {
+  const DEFAULTS = {
     placeholder: '搜索模型...',
     debounceDelay: 200,
     hideUnmatched: true,
@@ -27,7 +24,7 @@
     showNoResults: true,
   };
 
-  var CSS_VARS = {
+  const CSS_VARS = {
     bgMenu: 'var(--dsw-specific-menu)',
     labelPrimary: 'var(--dsw-alias-label-primary)',
     labelSecondary: 'var(--dsw-alias-label-secondary)',
@@ -44,61 +41,77 @@
     bgModulePlatform: 'var(--dsw-alias-bg-module-platform)',
   };
 
-  var CSS_ID = 'dsh-model-search-plugin-style';
-  var CSS = [
-    '.' + DEFAULTS.containerClass + ' {',
-    '  flex: none; padding: 4px 6px 0;',
-    '}',
-    '.' + DEFAULTS.containerClass + ' .search-wrapper {',
-    '  position: relative; display: flex; align-items: center;',
-    '}',
-    '.' + DEFAULTS.inputClass + ' {',
-    '  width: 100%; height: 28px;',
-    '  padding: 0 24px 0 8px;',
-    '  border: 1px solid ' + CSS_VARS.borderInverted + ';',
-    '  border-radius: 6px;',
-    '  background: transparent;',
-    '  color: ' + CSS_VARS.labelPrimary + ';',
-    '  font-size: 13px; line-height: 20px;',
-    '  outline: none;',
-    '  transition: border-color .15s, box-shadow .15s;',
-    '}',
-    '.' + DEFAULTS.inputClass + '::placeholder {',
-    '  color: ' + CSS_VARS.labelCaption + ';',
-    '}',
-    '.' + DEFAULTS.inputClass + ':focus {',
-    '  border-color: #4f8cff;',
-    '  box-shadow: 0 0 0 2px rgba(79,140,255,.25);',
-    '}',
-    '.' + DEFAULTS.inputClass + '.has-value + .search-clear-btn {',
-    '  display: flex;',
-    '}',
-    '.search-clear-btn {',
-    '  display: none; position: absolute;',
-    '  right: 4px; top: 50%; transform: translateY(-50%);',
-    '  width: 18px; height: 18px;',
-    '  align-items: center; justify-content: center;',
-    '  border: none; border-radius: 4px;',
-    '  background: transparent;',
-    '  color: ' + CSS_VARS.labelCaption + ';',
-    '  cursor: pointer; font-size: 14px; line-height: 1; padding: 0;',
-    '  transition: color .15s;',
-    '}',
-    '.search-clear-btn:hover {',
-    '  color: ' + CSS_VARS.labelPrimary + ';',
-    '}',
-    '.search-no-results {',
-    '  padding: 6px 8px;',
-    '  color: ' + CSS_VARS.labelTertiary + ';',
-    '  font-size: 12px; line-height: 18px; text-align: center;',
-    '}',
-    '.' + DEFAULTS.inputClass + '.no-results {',
-    '  border-color: ' + CSS_VARS.stateErrorPrimary + ';',
-    '}',
-  ].join('\n');
+  const CSS_ID = 'dsh-model-search-plugin-style';
+  const CSS = `
+.${DEFAULTS.containerClass} {
+  flex: none;
+  padding: 4px 6px 0;
+}
+.${DEFAULTS.containerClass} .search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.${DEFAULTS.inputClass} {
+  width: 100%;
+  height: 28px;
+  padding: 0 24px 0 8px;
+  border: 1px solid ${CSS_VARS.borderInverted};
+  border-radius: 6px;
+  background: transparent;
+  color: ${CSS_VARS.labelPrimary};
+  font-size: 13px;
+  line-height: 20px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.${DEFAULTS.inputClass}::placeholder {
+  color: ${CSS_VARS.labelCaption};
+}
+.${DEFAULTS.inputClass}:focus {
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79,140,255,.25);
+}
+.${DEFAULTS.inputClass}.has-value + .search-clear-btn {
+  display: flex;
+}
+.search-clear-btn {
+  display: none;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: ${CSS_VARS.labelCaption};
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: color .15s;
+}
+.search-clear-btn:hover {
+  color: ${CSS_VARS.labelPrimary};
+}
+.search-no-results {
+  padding: 6px 8px;
+  color: ${CSS_VARS.labelTertiary};
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+.${DEFAULTS.inputClass}.no-results {
+  border-color: ${CSS_VARS.stateErrorPrimary};
+}
+`;
 
   // ── state ──────────────────────────────────────────────────────────
-  var opts = {};
+  var opts = Object.assign({}, DEFAULTS);
   var state = {
     menuEl: null,
     groupsEl: null,
@@ -108,15 +121,9 @@
     observer: null,
     documentObserver: null,
     isActive: false,
+    menuCleanup: null,
   };
   var debounceTimer = null;
-
-  function resetOpts() {
-    for (var k in DEFAULTS) {
-      if (DEFAULTS.hasOwnProperty(k)) opts[k] = DEFAULTS[k];
-    }
-  }
-  resetOpts();
 
   // ── styles ─────────────────────────────────────────────────────────
   function injectStyles() {
@@ -234,7 +241,6 @@
     var q = query.trim().toLowerCase();
 
     if (q.length < opts.minQueryLength) {
-      // show all
       var allOptions = groupsEl.querySelectorAll('[role="menuitemradio"]');
       for (var i = 0; i < allOptions.length; i++) {
         allOptions[i].style.display = '';
@@ -286,7 +292,7 @@
     if (!state.noResultsEl) {
       var el = document.createElement('div');
       el.className = 'search-no-results';
-      el.textContent = '\u6CA1\u6709\u5339\u914D\u7684\u6A21\u578B';
+      el.textContent = '没有匹配的模型';
       state.noResultsEl = el;
     }
 
@@ -307,12 +313,12 @@
     if (el && el.getAttribute && el.getAttribute('role') === 'menu') {
       var label = (el.getAttribute('aria-label') || '').toLowerCase();
       if (label.indexOf('model') !== -1 ||
-          label.indexOf('\u63A8\u7406\u7B49\u7EA7') !== -1 ||
+          label.indexOf('推理等级') !== -1 ||
           label.indexOf('effort') !== -1) {
         return true;
       }
     }
-    var nested = el.querySelector('[role="menu"][aria-label*="model" i], [role="menu"][aria-label*="\u63A8\u7406\u7B49\u7EA7"], [role="menu"][aria-label*="effort" i]');
+    var nested = el.querySelector('[role="menu"][aria-label*="model" i], [role="menu"][aria-label*="推理等级"], [role="menu"][aria-label*="effort" i]');
     return nested !== null;
   }
 
@@ -344,7 +350,10 @@
       }
     });
 
-    state.observer.observe(menuEl, { childList: true, subtree: true });
+    state.observer.observe(menuEl, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   function injectSearchIntoMenu(menuEl, groupsEl) {
@@ -411,7 +420,7 @@
             return;
           }
           if (node instanceof HTMLElement) {
-            var menu = node.querySelector('[role="menu"][aria-label*="model" i], [role="menu"][aria-label*="\u63A8\u7406\u7B49\u7EA7"], [role="menu"][aria-label*="effort" i]');
+            var menu = node.querySelector('[role="menu"][aria-label*="model" i], [role="menu"][aria-label*="推理等级"], [role="menu"][aria-label*="effort" i]');
             if (menu) {
               state.menuEl = menu;
               attachMenuObserver(menu);
@@ -447,46 +456,32 @@
 
   // ── public API ──────────────────────────────────────────────────────
   var api = {
-    /** Configure the plugin before activation. */
     configure: function (options) {
       if (options) {
-        for (var k in options) {
-          if (options.hasOwnProperty(k) && DEFAULTS.hasOwnProperty(k)) {
-            opts[k] = options[k];
+        for (var key in options) {
+          if (options.hasOwnProperty(key) && DEFAULTS.hasOwnProperty(key)) {
+            opts[key] = options[key];
           }
         }
       }
-      return api;
     },
-
-    /** Activate the plugin: inject styles + start observing. */
     activate: function () {
-      if (state.isActive) return api;
+      if (state.isActive) return;
       injectStyles();
       startDocumentObserver();
-      return api;
     },
-
-    /** Deactivate the plugin: remove all injected DOM and observers. */
     deactivate: function () {
       detachFromMenu();
       stopDocumentObserver();
       removeStyles();
       state.isActive = false;
-      return api;
     },
-
-    /** DSH client plugin entry point. */
     apply: function (ctx, options) {
       if (options) api.configure(options);
       api.activate();
-      return api;
     },
-
-    /** Check current state. */
-    isActive: function () { return state.isActive; },
   };
 
-  // Expose globally
+  // Expose globally for standalone use
   window.DSHModelSearchPlugin = api;
 })();
