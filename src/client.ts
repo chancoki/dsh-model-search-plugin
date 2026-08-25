@@ -26,6 +26,19 @@ interface PluginState {
   menuCleanup: (() => void) | null;
 }
 
+/**
+ * State for the "fetch available models" picker dialog
+ * (设置 → 模型 → 添加提供方 → 自定义设置 → 获取可用模型).
+ */
+interface PickerState {
+  dialogEl: HTMLElement | null;
+  listEl: HTMLElement | null;
+  searchEl: HTMLInputElement | null;
+  clearEl: HTMLElement | null;
+  noResultsEl: HTMLElement | null;
+  observer: MutationObserver | null;
+}
+
 // ──── Defaults ─────────────────────────────────────────────────────────────
 
 const DEFAULTS: Required<ModelSearchPluginOptions> = {
@@ -46,8 +59,21 @@ const state: PluginState = {
   menuCleanup: null,
 };
 
+const pickerState: PickerState = {
+  dialogEl: null,
+  listEl: null,
+  searchEl: null,
+  clearEl: null,
+  noResultsEl: null,
+  observer: null,
+};
+
 let config: Required<ModelSearchPluginOptions> = { ...DEFAULTS };
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pickerDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Placeholder shown in the fetch-models candidate picker. */
+const PICKER_PLACEHOLDER = '搜索可用模型…';
 
 // ──── CSS injection ────────────────────────────────────────────────────────
 
@@ -135,7 +161,7 @@ function removeStyles() {
 
 // ──── Search UI construction ────────────────────────────────────────────
 
-function buildSearchUI(): HTMLInputElement {
+function buildSearchUI(placeholder?: string): HTMLInputElement {
   const container = document.createElement('div');
   container.className = config.containerClass;
 
@@ -145,7 +171,7 @@ function buildSearchUI(): HTMLInputElement {
   const input = document.createElement('input');
   input.type = 'text';
   input.className = config.inputClass;
-  input.placeholder = config.placeholder;
+  input.placeholder = placeholder ?? config.placeholder;
   input.spellcheck = false;
   input.autocomplete = 'off';
 
@@ -159,8 +185,13 @@ function buildSearchUI(): HTMLInputElement {
   wrapper.appendChild(clearBtn);
   container.appendChild(wrapper);
 
-  state.searchEl = input;
-  state.clearEl = clearBtn;
+  if (placeholder === PICKER_PLACEHOLDER) {
+    pickerState.searchEl = input;
+    pickerState.clearEl = clearBtn;
+  } else {
+    state.searchEl = input;
+    state.clearEl = clearBtn;
+  }
 
   // ── events ──
   input.addEventListener('input', onSearchInput);
@@ -175,24 +206,32 @@ function buildSearchUI(): HTMLInputElement {
 
 // ──── Event handlers ─────────────────────────────────────────────────────
 
-function onSearchInput() {
-  const el = state.searchEl;
+function onSearchInput(this: HTMLInputElement, ev?: Event) {
+  const el = (ev?.target as HTMLInputElement) ?? this ?? state.searchEl ?? pickerState.searchEl;
   if (!el) return;
 
   const hasValue = el.value.length > 0;
   el.classList.toggle('has-value', hasValue);
 
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => performSearch(el.value), config.debounceDelay);
+  const isPicker = el === pickerState.searchEl;
+  const timer = isPicker ? 'picker' : 'menu';
+  if (timer === 'picker') {
+    if (pickerDebounceTimer) clearTimeout(pickerDebounceTimer);
+    pickerDebounceTimer = setTimeout(() => performPickerSearch(el.value), config.debounceDelay);
+  } else {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => performSearch(el.value), config.debounceDelay);
+  }
 }
 
 function onSearchKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    const el = state.searchEl;
+    const el = e.target as HTMLInputElement;
     if (el && el.value) {
       el.value = '';
       el.classList.remove('has-value');
-      performSearch('');
+      if (el === pickerState.searchEl) performPickerSearch('');
+      else performSearch('');
     } else {
       el?.blur();
     }
@@ -201,25 +240,31 @@ function onSearchKeydown(e: KeyboardEvent) {
   }
 
   if (e.key === 'Enter') {
-    performSearch(state.searchEl?.value ?? '');
+    const el = e.target as HTMLInputElement;
+    if (el === pickerState.searchEl) performPickerSearch(el.value);
+    else performSearch(el?.value ?? '');
     e.preventDefault();
   }
 
   // Arrow keys in search field: forward focus to first/last model option
-  if (e.key === 'ArrowDown' && state.groupsEl) {
-    const firstOption = state.groupsEl.querySelector<HTMLElement>('[role="menuitemradio"]');
+  if (e.key === 'ArrowDown') {
+    const firstOption =
+      pickerState.listEl?.querySelector<HTMLElement>('li:not([style*="none"]) label') ??
+      state.groupsEl?.querySelector<HTMLElement>('[role="menuitemradio"]');
     firstOption?.focus();
     e.preventDefault();
   }
 }
 
-function onClearClick() {
-  const el = state.searchEl;
-  if (el) {
-    el.value = '';
-    el.classList.remove('has-value');
-    performSearch('');
-    el.focus();
+function onClearClick(e: MouseEvent) {
+  const el = (e.currentTarget as HTMLElement)?.previousElementSibling as HTMLInputElement | null;
+  const input = el ?? state.searchEl ?? pickerState.searchEl;
+  if (input) {
+    input.value = '';
+    input.classList.remove('has-value');
+    if (input === pickerState.searchEl) performPickerSearch('');
+    else performSearch('');
+    input.focus();
   }
 }
 
@@ -234,7 +279,125 @@ function onGlobalKeydown(e: KeyboardEvent) {
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
   e.preventDefault();
-  state.searchEl?.focus();
+  (pickerState.searchEl ?? state.searchEl)?.focus();
+}
+
+// ──── Candidate picker (fetch available models) search ──────────────────
+
+/**
+ * Filter the candidate model list of the fetch-models picker by keyword.
+ * Each row is `li > label > input[checkbox] + span.candidateId`.
+ */
+function performPickerSearch(query: string) {
+  const listEl = pickerState.listEl;
+  if (!listEl) return;
+
+  const q = query.trim().toLowerCase();
+  const items = listEl.querySelectorAll<HTMLElement>('li');
+
+  if (q.length < config.minQueryLength) {
+    for (const li of items) li.style.display = '';
+    showPickerNoResults(false);
+    return;
+  }
+
+  let matches = 0;
+  for (const li of items) {
+    const text = li.textContent?.toLowerCase() ?? '';
+    const hit = text.includes(q);
+    li.style.display = hit || !config.hideUnmatched ? '' : 'none';
+    if (hit) matches++;
+  }
+  showPickerNoResults(config.showNoResults && matches === 0 && q.length > 0);
+}
+
+function showPickerNoResults(show: boolean) {
+  if (!pickerState.noResultsEl) {
+    const el = document.createElement('div');
+    el.className = 'search-no-results';
+    el.textContent = '没有匹配的模型';
+    pickerState.noResultsEl = el;
+  }
+  const listEl = pickerState.listEl;
+  if (show) {
+    if (listEl && !pickerState.noResultsEl.parentNode) {
+      listEl.parentNode?.insertBefore(pickerState.noResultsEl, listEl);
+    }
+    pickerState.noResultsEl.style.display = '';
+    pickerState.searchEl?.classList.add('no-results');
+  } else {
+    pickerState.noResultsEl.style.display = 'none';
+    pickerState.searchEl?.classList.remove('no-results');
+  }
+}
+
+/** The scrollable `ul` that lists the provider's available models. */
+function findCandidateList(root: ParentNode): HTMLElement | null {
+  return root.querySelector<HTMLElement>('ul[class*="candidateList"]');
+}
+
+function injectSearchIntoPicker(listEl: HTMLElement) {
+  // Don't inject twice
+  if (pickerState.searchEl && listEl.contains(pickerState.searchEl)) return;
+
+  const input = buildSearchUI(PICKER_PLACEHOLDER);
+  const container = input.closest(`.${config.containerClass}`) as HTMLElement;
+
+  // Insert above the list; keep it visually inside the dialog body
+  listEl.parentNode?.insertBefore(container!, listEl);
+
+  setTimeout(() => input.focus(), 60);
+}
+
+function attachPickerObserver(dialogEl: HTMLElement) {
+  if (pickerState.observer) pickerState.observer.disconnect();
+
+  pickerState.observer = new MutationObserver(() => {
+    const listEl = findCandidateList(dialogEl);
+    if (listEl && listEl !== pickerState.listEl) {
+      pickerState.listEl = listEl;
+      injectSearchIntoPicker(listEl);
+    }
+    if (!document.body.contains(dialogEl)) detachFromPicker();
+  });
+
+  pickerState.observer.observe(dialogEl, { childList: true, subtree: true });
+}
+
+function detachFromPicker() {
+  pickerState.listEl = null;
+
+  if (pickerState.observer) {
+    pickerState.observer.disconnect();
+    pickerState.observer = null;
+  }
+
+  if (pickerState.searchEl) {
+    pickerState.searchEl.removeEventListener('input', onSearchInput);
+    pickerState.searchEl.removeEventListener('keydown', onSearchKeydown);
+    pickerState.searchEl = null;
+  }
+  if (pickerState.clearEl) {
+    pickerState.clearEl.removeEventListener('click', onClearClick);
+    pickerState.clearEl = null;
+  }
+  if (pickerState.noResultsEl) {
+    pickerState.noResultsEl.remove();
+    pickerState.noResultsEl = null;
+  }
+
+  const container = document.querySelectorAll(`.${config.containerClass}`);
+  container.forEach((el) => {
+    // remove only containers that are NOT the menu's search box
+    if (!el.contains(state.searchEl ?? null)) el.remove();
+  });
+
+  if (pickerDebounceTimer) {
+    clearTimeout(pickerDebounceTimer);
+    pickerDebounceTimer = null;
+  }
+
+  pickerState.dialogEl = null;
 }
 
 // ──── Search / filter logic ────────────────────────────────────────────
@@ -441,20 +604,31 @@ function startDocumentObserver() {
   state.documentObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        if (node instanceof HTMLElement && isModelMenu(node)) {
+        if (!(node instanceof HTMLElement)) continue;
+
+        // ── fetch-models candidate picker dialog ──
+        const pickerList =
+          (node.matches?.('ul[class*="candidateList"]') ? node : null) ??
+          node.querySelector<HTMLElement>('ul[class*="candidateList"]');
+        if (pickerList && !state.isActive) {
+          const dialog = pickerList.closest('div')?.parentElement ?? pickerList;
+          pickerState.dialogEl = (dialog as HTMLElement) ?? pickerList;
+          attachPickerObserver(document.body);
+          return;
+        }
+
+        if (isModelMenu(node)) {
           state.menuEl = node;
           attachMenuObserver(node);
           return;
         }
 
         // Check inside added nodes for the menu
-        if (node instanceof HTMLElement) {
-          const menu = node.querySelector<HTMLElement>('[role="menu"][aria-label*="model" i],[role="menu"][aria-label*="推理等级"],[role="menu"][aria-label*="effort" i]');
-          if (menu) {
-            state.menuEl = menu;
-            attachMenuObserver(menu);
-            return;
-          }
+        const menu = node.querySelector<HTMLElement>('[role="menu"][aria-label*="model" i],[role="menu"][aria-label*="推理等级"],[role="menu"][aria-label*="effort" i]');
+        if (menu) {
+          state.menuEl = menu;
+          attachMenuObserver(menu);
+          return;
         }
       }
 
@@ -463,6 +637,10 @@ function startDocumentObserver() {
         if (node instanceof HTMLElement) {
           if (node === state.menuEl || node.contains(state.menuEl)) {
             detachFromMenu();
+            return;
+          }
+          if (node === pickerState.dialogEl || node.contains(pickerState.dialogEl)) {
+            detachFromPicker();
             return;
           }
         }
@@ -509,6 +687,7 @@ function activate(): void {
  */
 function deactivate(): void {
   detachFromMenu();
+  detachFromPicker();
   stopDocumentObserver();
   removeStyles();
   state.isActive = false;
