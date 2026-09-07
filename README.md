@@ -1,4 +1,6 @@
 # DSH Model Search Plugin
+[![dsh.so risk](https://www.dsh.so/badge/dsh-model-search-plugin-2.svg)](https://www.dsh.so/artifact/dsh-model-search-plugin-2/)
+[![dsh.so install](https://www.dsh.so/badge/install/dsh-model-search-plugin-2.svg)](https://www.dsh.so/artifact/dsh-model-search-plugin-2/)
 
 为 DeepSeek Harness (DSH) Web GUI 提供模型搜索功能的插件。在以下两处弹窗中注入关键字搜索框，快速筛选模型：
 
